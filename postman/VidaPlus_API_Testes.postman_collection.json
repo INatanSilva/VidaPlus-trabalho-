@@ -1,0 +1,230 @@
+{
+  "info": {
+    "name": "VidaPlus API - Testes Funcionais",
+    "description": "Coleção de testes funcionais para a API SGHSS (VidaPlus)\n\nBase URL: http://localhost:8080\n\nOrdem sugerida:\n1. Executar Signup e Login\n2. Copiar o token da resposta do Login para a variável {{token}}\n3. Executar testes de Pacientes",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Autenticação - Signup",
+      "item": [
+        {
+          "name": "TF01 - Cadastrar usuário (sucesso)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"teste@vida.com\",\n  \"senha\": \"123456\",\n  \"perfil\": \"PROFISSIONAL\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/signup",
+            "description": "Resultado esperado: 200 OK com id, email e perfil"
+          }
+        },
+        {
+          "name": "TF03 - Email já cadastrado (erro)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"teste@vida.com\",\n  \"senha\": \"123456\",\n  \"perfil\": \"PROFISSIONAL\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/signup",
+            "description": "Executar após TF01. Resultado esperado: 400 Bad Request"
+          }
+        },
+        {
+          "name": "TF04 - Sem email (validação)",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"senha\": \"123456\",\n  \"perfil\": \"PROFISSIONAL\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/signup",
+            "description": "Resultado esperado: 400 Bad Request"
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Autenticação - Login",
+      "item": [
+        {
+          "name": "TF07 - Login (sucesso) - SALVAR TOKEN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var json = pm.response.json();",
+                  "    if (json.token) {",
+                  "        pm.collectionVariables.set('token', json.token);",
+                  "        console.log('Token salvo na variável {{token}}');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"teste@vida.com\",\n  \"senha\": \"123456\"\n}"
+            },
+            "url": "{{baseUrl}}/login",
+            "description": "Resultado esperado: 200 OK com token. O token é salvo automaticamente."
+          }
+        },
+        {
+          "name": "TF08 - Login senha incorreta",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"teste@vida.com\",\n  \"senha\": \"senhaerrada\"\n}"
+            },
+            "url": "{{baseUrl}}/login",
+            "description": "Resultado esperado: 401 Unauthorized"
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Pacientes - Cadastro",
+      "item": [
+        {
+          "name": "TF11 - Cadastrar paciente (sucesso)",
+          "request": {
+            "auth": {"type": "noauth"},
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}", "description": "Token do Login (TF07). Se vazio, execute TF07 antes."}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"Maria Santos\",\n  \"cpf\": \"111.222.333-44\",\n  \"dataNascimento\": \"1990-05-15\",\n  \"endereco\": \"Rua A, 100\"\n}"
+            },
+            "url": "{{baseUrl}}/pacientes",
+            "description": "Resultado esperado: 201 Created. Requer token."
+          }
+        },
+        {
+          "name": "TF13 - Cadastrar sem token",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"João Silva\",\n  \"cpf\": \"999.888.777-66\",\n  \"endereco\": \"Rua X, 1\"\n}"
+            },
+            "url": "{{baseUrl}}/pacientes",
+            "description": "Resultado esperado: 401 Unauthorized"
+          }
+        },
+        {
+          "name": "TF14 - Cadastrar sem CPF",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nome\": \"João Silva\",\n  \"endereco\": \"Rua X, 1\"\n}"
+            },
+            "url": "{{baseUrl}}/pacientes",
+            "description": "Resultado esperado: 400 Bad Request"
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Pacientes - Consulta",
+      "item": [
+        {
+          "name": "TF17 - Buscar paciente por ID",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": "{{baseUrl}}/pacientes/1",
+            "description": "Resultado esperado: 200 OK com dados do paciente"
+          }
+        },
+        {
+          "name": "TF18 - Buscar paciente inexistente",
+          "request": {
+            "method": "GET",
+            "header": [{"key": "Authorization", "value": "Bearer {{token}}"}],
+            "url": "{{baseUrl}}/pacientes/9999",
+            "description": "Resultado esperado: 404 Not Found"
+          }
+        },
+        {
+          "name": "TF19 - Buscar sem token",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/pacientes/1",
+            "description": "Resultado esperado: 401 Unauthorized"
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Pacientes - Atualização",
+      "item": [
+        {
+          "name": "TF20 - Atualizar paciente (sucesso)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"endereco\": \"Rua Nova, 200\"\n}"
+            },
+            "url": "{{baseUrl}}/pacientes/1",
+            "description": "Resultado esperado: 200 OK com mensagem de sucesso"
+          }
+        },
+        {
+          "name": "TF22 - Atualizar paciente inexistente",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{token}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"endereco\": \"Rua X\"\n}"
+            },
+            "url": "{{baseUrl}}/pacientes/9999",
+            "description": "Resultado esperado: 404 Not Found"
+          }
+        }
+      ]
+    }
+  ]
+}
